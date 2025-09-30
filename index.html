@@ -1,30 +1,37 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=1000, initial-scale=1.0">
-    <title>PIXELIO</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1000, initial-scale=1.0">
+  <title>PIXELIO</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="game-container">
-        <div class="placeholder-img">
-            <button class="start-btn" id="startBtn">Start Game</button>
-        </div>
-        <canvas id="canvas" width="1000" height="450" style="display:none;"></canvas>
+  <div class="game-container">
+    <!-- Start screen -->
+    <div class="start-screen" id="startScreen">
+      <h1 class="game-title">PIXELIO</h1>
+      <button class="start-btn" id="startBtn">▶ Play</button>
     </div>
 
-    <script src="game.js"></script>
-    <script>
-        document.getElementById('startBtn').onclick = function() {
-            document.querySelector('.placeholder-img').style.display = 'none';
-            document.getElementById('canvas').style.display = 'block';
-            startGame();
-        };
-    </script>
-</body>
+    <!-- Game canvas -->
+    <canvas id="canvas" width="1000" height="600" style="display:none;"></canvas>
 
-     <span id="score">Score: </span>
-     <br>
-     <span id="wave">Wave: </span>
+    <!-- HUD overlay -->
+    <div class="hud">
+      <span id="score">Score: 0</span>
+      <span id="wave">Wave: 1</span>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+  <script>
+    document.getElementById('startBtn').onclick = function () {
+      document.getElementById('startScreen').style.display = 'none';
+      document.getElementById('canvas').style.display = 'block';
+      document.querySelector('.hud').style.display = 'flex';
+      startGame();
+    };
+  </script>
+</body>
 </html>
