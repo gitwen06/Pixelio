@@ -1,6 +1,7 @@
 // --- Globals (top of file) ---
 let keys = {};
 let bullets = [];
+let bombProjectiles = []; // NEW: bomb bullets
 let enemies = [];
 let wave = 1;
 let score = 0;
@@ -12,6 +13,9 @@ let isRunning = false;      // track whether loop is running
 let restartBtn = null;      // reference so we can remove it
 let spawnTimeout = null;    // keep spawn timer id
 let shieldTimeout = null;   // keep shield timer id
+let burstReady = true;
+let bombReady = true;
+let bombEffect = null;
 
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
@@ -35,30 +39,26 @@ canvas.addEventListener("mousemove", e => {
 
 // --- Start / Restart ---
 function startGame() {
-  // Clear any pending timers from previous run
   if (spawnTimeout) { clearTimeout(spawnTimeout); spawnTimeout = null; }
   if (shieldTimeout) { clearTimeout(shieldTimeout); shieldTimeout = null; }
 
-  // Reset game state
   bullets = [];
+  bombProjectiles = [];
   enemies = [];
   wave = 1;
   score = 0;
   gameOver = false;
   spawning = false;
-  keys = {}; // reset pressed keys
+  keys = {};
 
-  // Reset player pos
   player.x = canvas.width / 2;
   player.y = canvas.height / 2;
 
-  // Remove restart button if present
   if (restartBtn) {
     restartBtn.remove();
     restartBtn = null;
   }
 
-  // Start the loop if not already running
   if (!isRunning) {
     requestAnimationFrame(gameLoop);
   }
@@ -66,7 +66,7 @@ function startGame() {
 
 // --- Restart button helper ---
 function showRestartButton() {
-  if (restartBtn) return; // only one
+  if (restartBtn) return;
 
   const container = document.querySelector('.game-container') || document.body;
   restartBtn = document.createElement('button');
@@ -74,7 +74,6 @@ function showRestartButton() {
   restartBtn.textContent = 'Restart';
   restartBtn.className = 'start-btn restart-btn';
 
-  // style it so it's visible (adjust as needed)
   restartBtn.style.position = 'absolute';
   restartBtn.style.top = '65%';
   restartBtn.style.left = '45%';
@@ -84,20 +83,16 @@ function showRestartButton() {
   container.appendChild(restartBtn);
 
   restartBtn.onclick = () => {
-    // remove button and restart cleanly
     if (restartBtn) { restartBtn.remove(); restartBtn = null; }
     startGame();
   };
 }
 
-// --- Spawning with cancellable timers ---
+// --- Spawning ---
 function spawnEnemies() {
   if (enemies.length === 0 && !spawning) {
     spawning = true;
-
-    // start delay (store id so we can clear on restart)
     spawnTimeout = setTimeout(() => {
-      // spawn enemies (they start shielded)
       for (let i = 0; i < wave * 5; i++) {
         enemies.push({
           x: Math.random() * canvas.width,
@@ -109,7 +104,6 @@ function spawnEnemies() {
         });
       }
 
-      // remove shield after 3s (store id so we can cancel too)
       if (shieldTimeout) clearTimeout(shieldTimeout);
       shieldTimeout = setTimeout(() => {
         enemies.forEach(e => e.shielded = false);
@@ -126,7 +120,6 @@ function spawnEnemies() {
 // --- Main loop ---
 function gameLoop() {
   if (gameOver) {
-    // draw overlay
     ctx.fillStyle = "rgba(0,0,0,0.6)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -140,26 +133,38 @@ function gameLoop() {
     ctx.fillText("Score: " + score, canvas.width / 2, canvas.height / 2 + 40);
 
     showRestartButton();
-    isRunning = false; // loop stopped
+    isRunning = false;
     return;
   }
 
-  isRunning = true;
-
-  // clear + updates + draw
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   movePlayer();
   drawPlayer();
   updateBullets();
+  updateBombProjectiles(); // NEW
   updateEnemies();
   spawnEnemies();
   drawScore();
 
+  // Draw bomb explosion if active
+  if (bombEffect) {
+    ctx.beginPath();
+    ctx.arc(bombEffect.x, bombEffect.y, bombEffect.radius, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(255, 50, 50, 0.4)";
+    ctx.fill();
+
+    bombEffect.duration--;
+    if (bombEffect.duration <= 0) {
+      bombEffect = null;
+    }
+  }
+
+  isRunning = true;
   requestAnimationFrame(gameLoop);
 }
 
-// --- Example helper functions (implementations should match your code) ---
+// --- Helpers ---
 function movePlayer() {
   if (keys["w"]) player.y -= player.speed;
   if (keys["s"]) player.y += player.speed;
@@ -181,7 +186,6 @@ function updateBullets() {
     b.x += b.dx * b.speed;
     b.y += b.dy * b.speed;
 
-    // remove offscreen bullets
     if (b.x < 0 || b.y < 0 || b.x > canvas.width || b.y > canvas.height) {
       bullets.splice(i, 1);
       continue;
@@ -196,21 +200,17 @@ function updateBullets() {
 function updateEnemies() {
   for (let ei = enemies.length - 1; ei >= 0; ei--) {
     const e = enemies[ei];
-
-    // only move + hurt when not shielded
     if (!e.shielded) {
       const angle = Math.atan2(player.y - e.y, player.x - e.x);
       e.x += Math.cos(angle) * e.speed;
       e.y += Math.sin(angle) * e.speed;
 
-      // collision with player -> game over
       const distToPlayer = Math.hypot(player.x - e.x, player.y - e.y);
       if (distToPlayer < player.size + e.size) {
         gameOver = true;
       }
     }
 
-    // bullet collisions (only if not shielded)
     for (let bi = bullets.length - 1; bi >= 0; bi--) {
       const b = bullets[bi];
       const dist = Math.hypot(e.x - b.x, e.y - b.y);
@@ -222,7 +222,6 @@ function updateEnemies() {
       }
     }
 
-    // draw enemy
     ctx.beginPath();
     ctx.arc(e.x, e.y, e.size, 0, Math.PI * 2);
     ctx.fillStyle = e.color;
@@ -239,7 +238,6 @@ function updateEnemies() {
     }
   }
 }
-
 function drawScore() {
   ctx.fillStyle = "white";
   ctx.font = "20px Arial";
@@ -255,28 +253,119 @@ function drawScore() {
   }
 }
 
-// --- Input (example) ---
-document.addEventListener('keydown', e => {
-    keys[e.key] = true;
-  
-    if (e.code === "Space" && !gameOver) {
-      const angle = Math.atan2(mouseY - player.y, mouseX - player.x);
-      bullets.push({
-        x: player.x,
-        y: player.y,
-        size: 5,
-        speed: 6,
-        dx: Math.cos(angle),
-        dy: Math.sin(angle)
-      });
-    }
-  });
-  
-  document.addEventListener('keyup', e => { keys[e.key] = false; });
+// --- Bomb Projectile ---
+function updateBombProjectiles() {
+  for (let i = bombProjectiles.length - 1; i >= 0; i--) {
+    const b = bombProjectiles[i];
+    b.x += b.dx * b.speed;
+    b.y += b.dy * b.speed;
 
-// Make sure your start button calls startGame()
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, b.size, 0, Math.PI * 2);
+    ctx.fillStyle = "orange";
+    ctx.fill();
+
+    if (b.x < 0 || b.x > canvas.width || b.y < 0 || b.y > canvas.height) {
+      bombProjectiles.splice(i, 1);
+      continue;
+    }
+
+    for (let ei = enemies.length - 1; ei >= 0; ei--) {
+      const e = enemies[ei];
+      const dist = Math.hypot(b.x - e.x, b.y - e.y);
+      if (dist < b.size + e.size && !e.shielded) {
+        triggerBombExplosion(b.x, b.y);
+        bombProjectiles.splice(i, 1);
+        break;
+      }
+    }
+  }
+}
+function triggerBombExplosion(x, y) {
+  const radius = 300;
+  bombEffect = {
+    x: x,
+    y: y,
+    radius: radius,
+    duration: 30
+  };
+
+  for (let i = enemies.length - 1; i >= 0; i--) {
+    const e = enemies[i];
+    const dist = Math.hypot(x - e.x, y - e.y);
+    if (dist < radius + e.size && !e.shielded) {
+      enemies.splice(i, 1);
+      score += 20;
+    }
+  }
+}
+
+// --- Skills ---
+function useBurstShot() {
+  if (!burstReady) return;
+  burstReady = false;
+
+  const numBullets = 24;
+  const angleStep = (Math.PI * 2) / numBullets;
+  for (let i = 0; i < numBullets; i++) {
+    const angle = i * angleStep;
+    bullets.push({
+      x: player.x,
+      y: player.y,
+      size: 5,
+      speed: 6,
+      dx: Math.cos(angle),
+      dy: Math.sin(angle)
+    });
+  }
+  setTimeout(() => burstReady = true, 3000);
+}
+function useUltimateBomb() {
+  if (!bombReady) return;
+  bombReady = false;
+
+  const angle = Math.atan2(mouseY - player.y, mouseX - player.x);
+  bombProjectiles.push({
+    x: player.x,
+    y: player.y,
+    size: 10,
+    speed: 4,
+    dx: Math.cos(angle),
+    dy: Math.sin(angle),
+    active: true
+  });
+
+  setTimeout(() => bombReady = true, 10000);
+}
+
+// --- Input ---
+document.addEventListener('keydown', e => {
+  keys[e.key] = true;
+
+  if (e.key.toLowerCase() === "q" && !gameOver) {
+    useBurstShot();
+  }
+  if (e.key.toLowerCase() === "e" && !gameOver) {
+    useUltimateBomb();
+  }
+  if (e.code === "Space" && !gameOver) {
+    const angle = Math.atan2(mouseY - player.y, mouseX - player.x);
+    bullets.push({
+      x: player.x,
+      y: player.y,
+      size: 5,
+      speed: 6,
+      dx: Math.cos(angle),
+      dy: Math.sin(angle)
+    });
+  }
+});
+document.addEventListener('keyup', e => { keys[e.key] = false; });
+
+// Start button
 document.getElementById('startBtn').onclick = function() {
   document.querySelector('.placeholder-img').style.display = 'none';
   document.getElementById('canvas').style.display = 'block';
   startGame();
 };
+ 

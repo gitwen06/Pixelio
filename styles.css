@@ -71,4 +71,29 @@ body {
     padding: 8px 20px;
     border-radius: 10px;
   }
+  .skill-btn {
+    width: 60px;
+    height: 60px;
+    border-radius: 8px;
+    border: 2px solid #ccc;
+    font-size: 20px;
+    font-weight: bold;
+    color: #fff;
+    cursor: default;
+    background: #666;
+    opacity: 0.5; /* default = cooldown */
+    transition: opacity 0.3s, background 0.3s;
+  }
+
+  .skill-btn.ready {
+    background: #28a745;
+    opacity: 1;
+    cursor: pointer;
+  }
+
+  #score, #wave {
+    display: block;
+    margin-top: 10px;
+    font-size: 18px;
+  }
   
