@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1000, initial-scale=1.0">
+    <title>PIXELIO</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <div class="placeholder-img">
+            <button class="start-btn" id="startBtn">Start Game</button>
+        </div>
+        <canvas id="canvas" width="1000" height="450" style="display:none;"></canvas>
+    </div>
+
+    <script src="game.js"></script>
+    <script>
+        document.getElementById('startBtn').onclick = function() {
+            document.querySelector('.placeholder-img').style.display = 'none';
+            document.getElementById('canvas').style.display = 'block';
+            startGame();
+        };
+    </script>
+</body>
+
+     <span id="score">Score: </span>
+</html>

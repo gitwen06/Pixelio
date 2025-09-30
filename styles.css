@@ -1,0 +1,24 @@
+body {
+    margin: 0;
+    background: #111;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    overflow: auto;
+}
+
+.game-container {
+    text-align: center;
+}
+
+.start-btn {
+    padding: 10px 20px;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+canvas {
+    border: 2px solid white;
+    background: black;
+}
