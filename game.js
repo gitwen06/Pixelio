@@ -93,6 +93,7 @@ function spawnEnemies() {
             });
         }
         wave++;
+        document.getElementById("wave").innerText = "Wave: " + (wave - 1);
     }
 }
 
