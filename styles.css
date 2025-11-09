@@ -1,8 +1,7 @@
-/* General reset */
 body {
     margin: 0;
     padding: 0;
-    background: #f2f2f2; /* Light gray background */
+    background: gray; 
     font-family: Arial, sans-serif;
     overflow: hidden;
   }
@@ -15,7 +14,7 @@ body {
     height: 100vh;
   }
   
-  /* Start screen */
+ 
   .start-screen {
     display: flex;
     flex-direction: column;
@@ -48,17 +47,16 @@ body {
     transform: scale(1.05);
   }
   
-  /* Canvas */
   #canvas {
-    background: #e3e3e3; /* Diep.io-style light grid background */
+    background: black; 
     border: 2px solid #333;
     border-radius: 6px;
   }
   
-  /* HUD overlay */
+  
   .hud {
     position: absolute;
-    top: 10px;
+    top: 5px;
     left: 50%;
     transform: translateX(-50%);
     display: none;
@@ -67,21 +65,23 @@ body {
     font-size: 20px;
     font-weight: bold;
     color: #333;
-    background: rgba(255, 255, 255, 0.6);
+    background: rgba(155, 215, 255, 0.6);
     padding: 8px 20px;
     border-radius: 10px;
   }
   .skill-btn {
+    position: block;
+    display: flex;
     width: 60px;
     height: 60px;
     border-radius: 8px;
     border: 2px solid #ccc;
     font-size: 20px;
     font-weight: bold;
-    color: #fff;
+    color: black;
     cursor: default;
     background: #666;
-    opacity: 0.5; /* default = cooldown */
+    opacity: 0.5;
     transition: opacity 0.3s, background 0.3s;
   }
 
@@ -96,4 +96,3 @@ body {
     margin-top: 10px;
     font-size: 18px;
   }
-  

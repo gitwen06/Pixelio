@@ -5,37 +5,152 @@
   <meta name="viewport" content="width=1000, initial-scale=1.0">
   <title>PIXELIO</title>
   <link rel="stylesheet" href="styles.css">
+  <style>
+    body {
+      margin: 0;
+      background-color: #111;
+      font-family: "Poppins", sans-serif;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .game-container {
+      position: relative;
+      width: 1000px;
+      height: 600px;
+      border: 3px solid #555;
+      border-radius: 10px;
+      overflow: hidden;
+      background: radial-gradient(circle at center, #1a1a1a, #000);
+    }
+
+    .start-screen {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.8);
+      text-align: center;
+    }
+
+    .game-title {
+      font-size: 60px;
+      color: cyan;
+      letter-spacing: 4px;
+      text-shadow: 0 0 20px cyan;
+      margin-bottom: 40px;
+    }
+
+    .start-btn {
+      font-size: 28px;
+      padding: 12px 40px;
+      border: none;
+      border-radius: 8px;
+      background: cyan;
+      color: black;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .start-btn:hover {
+      background: white;
+      transform: scale(1.05);
+    }
+
+    .skills {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 20px;
+      z-index: 10;
+    }
+
+    .skill-btn {
+      width: 70px;
+      height: 70px;
+      border-radius: 15px;
+      border: 2px solid #666;
+      font-size: 28px;
+      font-weight: bold;
+      background-color: #333;
+      color: #aaa;
+      cursor: not-allowed;
+      transition: all 0.2s ease;
+    }
+
+    .skill-btn.ready {
+      background-color: cyan;
+      color: black;
+      border-color: white;
+      cursor: pointer;
+      box-shadow: 0 0 10px cyan;
+    }
+
+    canvas {
+      background-color: #000;
+      display: none;
+    }
+  </style>
 </head>
 <body>
+
   <div class="game-container">
-    <!-- Start screen -->
+  
     <div class="start-screen" id="startScreen">
       <h1 class="game-title">PIXELIO</h1>
       <button class="start-btn" id="startBtn">▶ Play</button>
     </div>
 
-    <!-- Game canvas -->
-    <canvas id="canvas" width="1000" height="600" style="display:none;"></canvas>
+    
+    <canvas id="canvas" width="1000" height="600"></canvas>
 
-    <!-- HUD overlay -->
     <div class="hud">
       <span id="score">Score: 0</span>
       <span id="wave">Wave: 1</span>
     </div>
-  </div>
-  <div class="skills">
-    <button id="skillQ" class="skill-btn">Q</button>
-    <button id="skillE" class="skill-btn">E</button>
+
+    
+    <div class="skills">
+      <button id="skillQ" class="skill-btn">Q</button>
+      <button id="skillE" class="skill-btn">E</button>
+    </div>
   </div>
 
   <script src="game.js"></script>
   <script>
-    document.getElementById('startBtn').onclick = function () {
-      document.getElementById('startScreen').style.display = 'none';
+    const startBtn = document.getElementById('startBtn');
+    const startScreen = document.getElementById('startScreen');
+    const hud = document.querySelector('.hud');
+    const skillQ = document.getElementById('skillQ');
+    const skillE = document.getElementById('skillE');
+
+    startBtn.onclick = () => {
+      startScreen.style.display = 'none';
       document.getElementById('canvas').style.display = 'block';
-      document.querySelector('.hud').style.display = 'flex';
+  
       startGame();
     };
+
+    
+    setInterval(() => {
+      if (typeof burstReady !== "undefined") {
+        if (burstReady) skillQ.classList.add("ready");
+        else skillQ.classList.remove("ready");
+      }
+
+      if (typeof bombReady !== "undefined") {
+        if (bombReady) skillE.classList.add("ready");
+        else skillE.classList.remove("ready");
+      }
+    }, 100);
   </script>
 </body>
 </html>
