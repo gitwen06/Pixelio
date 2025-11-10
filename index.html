@@ -1,127 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=1000, initial-scale=1.0">
   <title>PIXELIO</title>
   <link rel="stylesheet" href="styles.css">
-  <style>
-    body {
-      margin: 0;
-      background-color: #111;
-      font-family: "Poppins", sans-serif;
-      color: white;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      overflow: hidden;
-    }
-
-    .game-container {
-      position: relative;
-      width: 1000px;
-      height: 600px;
-      border: 3px solid #555;
-      border-radius: 10px;
-      overflow: hidden;
-      background: radial-gradient(circle at center, #1a1a1a, #000);
-    }
-
-    .start-screen {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      background: rgba(0, 0, 0, 0.8);
-      text-align: center;
-    }
-
-    .game-title {
-      font-size: 60px;
-      color: cyan;
-      letter-spacing: 4px;
-      text-shadow: 0 0 20px cyan;
-      margin-bottom: 40px;
-    }
-
-    .start-btn {
-      font-size: 28px;
-      padding: 12px 40px;
-      border: none;
-      border-radius: 8px;
-      background: cyan;
-      color: black;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-
-    .start-btn:hover {
-      background: white;
-      transform: scale(1.05);
-    }
-
-    .skills {
-      position: absolute;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      gap: 20px;
-      z-index: 10;
-    }
-
-    .skill-btn {
-      width: 70px;
-      height: 70px;
-      border-radius: 15px;
-      border: 2px solid #666;
-      font-size: 28px;
-      font-weight: bold;
-      background-color: #333;
-      color: #aaa;
-      cursor: not-allowed;
-      transition: all 0.2s ease;
-    }
-
-    .skill-btn.ready {
-      background-color: cyan;
-      color: black;
-      border-color: white;
-      cursor: pointer;
-      box-shadow: 0 0 10px cyan;
-    }
-
-    canvas {
-      background-color: #000;
-      display: none;
-    }
-  </style>
 </head>
+
 <body>
 
   <div class="game-container">
-  
+    <div class="background-gif"></div>
     <div class="start-screen" id="startScreen">
-      <h1 class="game-title">PIXELIO</h1>
       <button class="start-btn" id="startBtn">▶ Play</button>
     </div>
-
-    
-    <canvas id="canvas" width="1000" height="600"></canvas>
-
-    <div class="hud">
-      <span id="score">Score: 0</span>
-      <span id="wave">Wave: 1</span>
-    </div>
-
-    
     <div class="skills">
       <button id="skillQ" class="skill-btn" display="none">Q</button>
       <button id="skillE" class="skill-btn" display="none">E</button>
     </div>
+
+    <canvas id="canvas" width="1000" height="600"></canvas>
+
+    <div class="hud" id="hud">
+      <span id="score">Score: 0</span>
+      <span id="wave">Wave: 1</span>
+    </div>
+  </div>
+
+
+
+ 
   </div>
 
   <script src="game.js"></script>
@@ -135,11 +44,11 @@
     startBtn.onclick = () => {
       startScreen.style.display = 'none';
       document.getElementById('canvas').style.display = 'block';
-  
+
       startGame();
     };
 
-    
+
     setInterval(() => {
       if (typeof burstReady !== "undefined") {
         if (burstReady) skillQ.classList.add("ready");
@@ -153,4 +62,5 @@
     }, 100);
   </script>
 </body>
+
 </html>

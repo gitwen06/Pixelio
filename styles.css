@@ -1,98 +1,181 @@
+@font-face {
+  font-family: 'ByteBounce';
+  src: url('font/ByteBounce.ttf') format('truetype');
+}
+
 body {
-    margin: 0;
-    padding: 0;
-    background: gray; 
-    font-family: Arial, sans-serif;
-    overflow: hidden;
-  }
-  
-  .game-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-direction: column;
-    height: 100vh;
-  }
-  
- 
-  .start-screen {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  .game-title {
-    font-size: 50px;
-    font-weight: bold;
-    color: #444;
-    margin-bottom: 20px;
-    text-shadow: 2px 2px #ddd;
-  }
-  
-  .start-btn {
-    padding: 15px 40px;
-    font-size: 24px;
-    font-weight: bold;
-    color: white;
-    background: #007bff;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: 0.2s;
-  }
-  
-  .start-btn:hover {
-    background: #0056b3;
-    transform: scale(1.05);
-  }
-  
-  #canvas {
-    background: black; 
-    border: 2px solid #333;
-    border-radius: 6px;
-  }
-  
-  
-  .hud {
-    position: absolute;
-    top: 5px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: none;
-    justify-content: space-between;
-    width: 400px;
-    font-size: 20px;
-    font-weight: bold;
-    color: #333;
-    background: rgba(155, 215, 255, 0.6);
-    padding: 8px 20px;
-    border-radius: 10px;
-  }
-  .skill-btn {
-    position: block;
-    display: flex;
-    width: 60px;
-    height: 60px;
-    border-radius: 8px;
-    border: 2px solid #ccc;
-    font-size: 20px;
-    font-weight: bold;
-    color: black;
-    cursor: default;
-    background: #666;
-    opacity: 0.5;
-    transition: opacity 0.3s, background 0.3s;
-  }
+  margin: 0;
+  background-color: #111;
+  font-family: 'ByteBounce', monospace;
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  overflow: hidden;
+}
 
-  .skill-btn.ready {
-    background: #28a745;
-    opacity: 1;
-    cursor: pointer;
-  }
+.background-gif {
+  position: absolute;
+  inset: 0;
+  background: url('images/StartMenu.gif') no-repeat center center;
+  background-size: cover;
+  filter: brightness(1.5);
+  z-index: 0;
+}
 
-  #score, #wave {
-    display: block;
-    margin-top: 10px;
-    font-size: 18px;
-  }
+.start-screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  text-align: center;
+  z-index: 2;
+}
+
+#canvas {
+  display: none;
+  position: relative;
+  z-index: 2;
+}
+
+.hud {
+  display: none;
+  position: absolute;
+  top: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  justify-content: space-between;
+  width: 400px;
+  font-size: 20px;
+  font-weight: bold;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 8px 20px;
+  border-radius: 10px;
+  font-family: 'ByteBounce', monospace;
+  z-index: 2;
+}
+
+
+.game-container {
+  position: relative;
+  width: 1000px;
+  height: 600px;
+  border: 3px solid #555;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+
+.game-container::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: url('images/StartMenu.gif') no-repeat center center;
+  background-size: cover;
+  filter: brightness(1);
+  z-index: 0;
+}
+
+.start-screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  text-align: center;
+  z-index: 1;
+}
+
+.game-title {
+  font-family: 'ByteBounce', monospace;
+  font-size: 60px;
+  color: cyan;
+  letter-spacing: 4px;
+  text-shadow: 0 0 20px cyan;
+  margin-bottom: 40px;
+}
+
+.start-btn {
+  font-family: 'ByteBounce', monospace;
+  font-size: 28px;
+  padding: 12px 40px;
+  border: none;
+  border-radius: 8px;
+  background: cyan;
+  color: black;
+  cursor: pointer;
+  transition: 0.2s;
+  margin-top: 200px;
+  z-index: 2;
+}
+
+.start-btn:hover {
+  background: white;
+  transform: scale(1.05);
+}
+
+.skills {
+  position: absolute;
+  left: 800px;
+  bottom: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px; 
+  z-index: 3;
+}
+
+#skillE {
+  order: 2; 
+  margin-right: 200px;
+}
+
+#skillQ {
+  order: 1;
+}
+
+.skill-btn {
+  width: 85px;
+  height: 85px;
+  font-size: 37px;
+  font-weight: bold;
+  color: black;
+  background: #666;
+  opacity: 0.5;
+  cursor: default;
+  border: 2px solid #ccc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.3s, background 0.3s;
+}
+
+.skill-btn.ready {
+  background: cyan;
+  opacity: 1;
+  cursor: pointer;
+  box-shadow: 0 0 10px cyan;
+}
+
+.skill-btn:hover {
+  background: lightcyan;
+}
+
+canvas {
+  background-color: #000;
+  display: none;
+}
+
+#score,
+#wave {
+  display: block;
+  margin-top: 10px;
+  font-size: 18px;
+}

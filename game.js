@@ -47,6 +47,8 @@ const bigHealthImg = new Image();
 bigHealthImg.src = "images/Bighealth.png";
 const miniHealthImg = new Image();
 miniHealthImg.src = "images/MiniHealth.png";
+const bombBullet = new Image();
+bombBullet.src = "images/bombBullet.png";
 
 const skillButtonQ = document.getElementById('skillQ');
 const skillButtonE = document.getElementById('skillE');
@@ -108,46 +110,52 @@ function startGame() {
 
 function showRestartButton() {
   if (restartBtn) return;
-  const container = document.querySelector('.game-container') || document.body;
+  const container = document.querySelector('.game-container');
   restartBtn = document.createElement('button');
   restartBtn.id = 'restartBtn';
   restartBtn.textContent = 'Restart';
   restartBtn.className = 'start-btn restart-btn';
   restartBtn.style.position = 'absolute';
-  restartBtn.style.top = '65%';
+  restartBtn.style.top = '50%';
   restartBtn.style.left = '50%';
   restartBtn.style.transform = 'translate(-50%, -50%)';
-  restartBtn.style.zIndex = 1000;
+  restartBtn.style.zIndex = 5; 
   container.appendChild(restartBtn);
+
   restartBtn.onclick = () => {
-    if (restartBtn) { restartBtn.remove(); restartBtn = null; }
+    restartBtn.remove();
+    restartBtn = null;
     startGame();
   };
 }
+
 function showMenuButton() {
   if (menuBtn) return;
-  const container = document.querySelector('.game-container') || document.body;
+  const container = document.querySelector('.game-container');
   menuBtn = document.createElement('button');
   menuBtn.id = 'menuBtn';
   menuBtn.textContent = 'Main Menu';
   menuBtn.className = 'start-btn menu-btn';
   menuBtn.style.position = 'absolute';
-  menuBtn.style.top = '75%';
+  menuBtn.style.top = '60%';
   menuBtn.style.left = '50%';
   menuBtn.style.transform = 'translate(-50%, -50%)';
-  menuBtn.style.zIndex = 1000;
+  menuBtn.style.zIndex = 5;
   container.appendChild(menuBtn);
+
   menuBtn.onclick = () => {
-    if (menuBtn) { menuBtn.remove(); menuBtn = null; }
+    menuBtn.remove();
+    menuBtn = null;
     if (restartBtn) { restartBtn.remove(); restartBtn = null; }
-    document.getElementsByClassName('start-screen')[0].style.display = 'flex';
-    document.getElementById('canvas').style.display = 'none';
-    skillButtonE.style.display = "none";
-    skillButtonQ.style.display = "none";
+    startScreen.style.display = 'flex';
+    canvas.style.display = 'none';
+    hud.style.display = 'none';
+    bgGif.style.display = 'block';
     gameOver = true;
     isRunning = false;
   };
 }
+
 
 function spawnEnemies() {
   if (enemies.length === 0 && !spawning) {
@@ -219,9 +227,10 @@ function gameLoop() {
     ctx.fillStyle = "red";
     ctx.font = "50px Arial";
     ctx.textAlign = "center";
+    ctx.font = "Bold 60px ByteBounce";
     ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2 - 10);
     ctx.fillStyle = "white";
-    ctx.font = "28px Arial";
+    ctx.font = "28px ByteBounce";
     ctx.fillText("Score: " + score, canvas.width / 2, canvas.height / 2 + 40);
     showRestartButton();
     showMenuButton();
@@ -431,11 +440,21 @@ function updateBombProjectiles() {
     const b = bombProjectiles[i];
     b.x += b.dx * b.speed;
     b.y += b.dy * b.speed;
-    ctx.drawImage(bulletImg, b.x - 5, b.y - 5, 10, 10);
+
+    if (b.rotation === undefined) b.rotation = 0;
+    b.rotation += 0.2; 
+    const bombSize = 30;
+    ctx.save();
+    ctx.translate(b.x, b.y); 
+    ctx.rotate(b.rotation);  
+    ctx.drawImage(bombBullet, -bombSize / 2, -bombSize / 2, bombSize, bombSize);
+    ctx.restore();
+
     if (b.x < 0 || b.x > canvas.width || b.y < 0 || b.y > canvas.height) {
       bombProjectiles.splice(i, 1);
       continue;
     }
+
     for (let ei = enemies.length - 1; ei >= 0; ei--) {
       const e = enemies[ei];
       const dist = Math.hypot(b.x - e.x, b.y - e.y);
@@ -474,7 +493,7 @@ function drawExplosions(deltaTime) {
 }
 
 function triggerBombExplosion(x, y) {
-  const radius = 115;
+  const radius = 125;
   explosions.push({
     x,
     y,
@@ -490,7 +509,7 @@ function triggerBombExplosion(x, y) {
       enemies.splice(i, 1);
       score += 20;
     }
-    if(dist < radius + e.size && !e.shielded && e.isTank) {
+    if(dist < radius  + e.size && !e.shielded && e.isTank) {
       e.hp -= 3;
       if (e.hp <= 0) {
         enemies.splice(i, 1);
@@ -501,14 +520,14 @@ function triggerBombExplosion(x, y) {
 }
 function drawScore() {
   ctx.fillStyle = "white";
-  ctx.font = "20px Arial";
+  ctx.font = "40px ByteBounce";
   ctx.textAlign = "left";
   ctx.fillText("Score: " + score, 20, 30);
   ctx.fillText("Wave: " + (wave - 1), 20, 60);
   if (spawning) {
     ctx.textAlign = "center";
     ctx.fillStyle = "yellow";
-    ctx.font = "24px Arial";
+    ctx.font = "50px ByteBounce";
     ctx.fillText("Next wave starting...", canvas.width / 2, canvas.height / 2 - 80);
   }
 }
@@ -543,8 +562,10 @@ function useUltimateBomb() {
     speed: 4,
     dx: Math.cos(angle),
     dy: Math.sin(angle),
+    rotation: 0,
     active: true
   });
+  
   setTimeout(() => bombReady = true, 10000);
 }
 
