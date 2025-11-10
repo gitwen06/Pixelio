@@ -1,45 +1,58 @@
-// --- Globals ---
 let keys = {};
 let bullets = [];
 let bombProjectiles = [];
 let enemies = [];
 let enemyBullets = [];
-
-// --- Player Health ---
 let playerHealth = 3;
 const maxHealth = 3;
 let healthPickups = [];
-
 let wave = 1;
 let score = 0;
-
 let gameOver = false;
 let spawning = false;
-
 let isRunning = false;
 let restartBtn = null;
+let menuBtn = null;
 let spawnTimeout = null;
 let shieldTimeout = null;
 let burstReady = true;
 let bombReady = true;
 let bombEffect = null;
 let playerFlash = 0;
+let lastFrameTime = performance.now();
+
+
+const explosionFrames = [
+  new Image(),
+  new Image(),
+  new Image()
+];
+explosionFrames[0].src = "images/Explosion_frame_1.png";
+explosionFrames[1].src = "images/Explosion_frame_2.png";
+explosionFrames[2].src = "images/Explosion_frame_3.png";
+
+
+
+let explosions = [];
+
 
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
-// --- Load Images ---
 const playerImg = new Image();
 playerImg.src = "images/Mainbody.png";
-
 const bulletImg = new Image();
 bulletImg.src = "images/Bullet.png";
-
 const bigHealthImg = new Image();
 bigHealthImg.src = "images/Bighealth.png";
-
 const miniHealthImg = new Image();
 miniHealthImg.src = "images/MiniHealth.png";
+
+const skillButtonQ = document.getElementById('skillQ');
+const skillButtonE = document.getElementById('skillE');
+skillButtonE.style.display = "none";
+skillButtonQ.style.display = "none";
+
 
 const player = {
   x: canvas.width / 2,
@@ -58,38 +71,43 @@ canvas.addEventListener("mousemove", e => {
   mouseY = e.clientY - rect.top;
 });
 
-// --- Start / Restart ---
 function startGame() {
   if (spawnTimeout) { clearTimeout(spawnTimeout); spawnTimeout = null; }
   if (shieldTimeout) { clearTimeout(shieldTimeout); shieldTimeout = null; }
-
   bullets = [];
   bombProjectiles = [];
   enemies = [];
   enemyBullets = [];
+  healthPickups = [];
   wave = 1;
   score = 0;
   gameOver = false;
   spawning = false;
   keys = {};
-
   player.x = canvas.width / 2;
   player.y = canvas.height / 2;
-
+  playerHealth = maxHealth;
+  burstReady = true;
+  bombReady = true;
+  bombEffect = null;
+  playerFlash = 0;
+  skillButtonE.style.display="flex";
+  skillButtonQ.style.display="flex";
   if (restartBtn) {
     restartBtn.remove();
     restartBtn = null;
   }
-
+  if(menuBtn) {
+    menuBtn.remove();
+    menuBtn = null;
+  }
   if (!isRunning) {
     requestAnimationFrame(gameLoop);
   }
 }
 
-// --- Restart button helper ---
 function showRestartButton() {
   if (restartBtn) return;
-
   const container = document.querySelector('.game-container') || document.body;
   restartBtn = document.createElement('button');
   restartBtn.id = 'restartBtn';
@@ -101,19 +119,41 @@ function showRestartButton() {
   restartBtn.style.transform = 'translate(-50%, -50%)';
   restartBtn.style.zIndex = 1000;
   container.appendChild(restartBtn);
-
   restartBtn.onclick = () => {
     if (restartBtn) { restartBtn.remove(); restartBtn = null; }
     startGame();
   };
 }
+function showMenuButton() {
+  if (menuBtn) return;
+  const container = document.querySelector('.game-container') || document.body;
+  menuBtn = document.createElement('button');
+  menuBtn.id = 'menuBtn';
+  menuBtn.textContent = 'Main Menu';
+  menuBtn.className = 'start-btn menu-btn';
+  menuBtn.style.position = 'absolute';
+  menuBtn.style.top = '75%';
+  menuBtn.style.left = '50%';
+  menuBtn.style.transform = 'translate(-50%, -50%)';
+  menuBtn.style.zIndex = 1000;
+  container.appendChild(menuBtn);
+  menuBtn.onclick = () => {
+    if (menuBtn) { menuBtn.remove(); menuBtn = null; }
+    if (restartBtn) { restartBtn.remove(); restartBtn = null; }
+    document.getElementsByClassName('start-screen')[0].style.display = 'flex';
+    document.getElementById('canvas').style.display = 'none';
+    skillButtonE.style.display = "none";
+    skillButtonQ.style.display = "none";
+    gameOver = true;
+    isRunning = false;
+  };
+}
 
-// --- Spawning ---
 function spawnEnemies() {
   if (enemies.length === 0 && !spawning) {
     spawning = true;
     spawnTimeout = setTimeout(() => {
-      for (let i = 0; i < wave * 3.5; i++) {
+      for (let i = 0; i < wave * 2; i++) {
         enemies.push({
           x: Math.random() * canvas.width,
           y: Math.random() * canvas.height,
@@ -123,12 +163,12 @@ function spawnEnemies() {
           shielded: true,
           canShoot: false,
           lastShot: Date.now(),
-          shootCooldown: 999999
+          shootCooldown: 999999,
+          hp: 1
         });
       }
-
       if (wave >= 5) {
-        for (let j = 0; j < wave * 1.1; j++) {
+        for (let j = 0; j < wave * 1.05; j++) {
           enemies.push({
             x: Math.random() * canvas.width,
             y: Math.random() * canvas.height,
@@ -138,12 +178,13 @@ function spawnEnemies() {
             shielded: true,
             canShoot: true,
             lastShot: Date.now(),
-            shootCooldown: 2000 + Math.random() * 1000
+            shootCooldown: 2000 + Math.random() * 1000,
+            hp: 1
           });
         }
       }
-      if(wave == 10) {
-        for (let k = 0; k < 5; k++) {
+      if (wave >= 10) {
+        for (let k = 0; k < 2.5; k++) {
           enemies.push({
             x: Math.random() * canvas.width,
             y: Math.random() * canvas.height,
@@ -153,17 +194,17 @@ function spawnEnemies() {
             shielded: true,
             canShoot: true,
             lastShot: Date.now(),
-            shootCooldown: 1500
+            shootCooldown: 1500,
+            hp: 5,
+            isTank: true
           });
         }
       }
-
       if (shieldTimeout) clearTimeout(shieldTimeout);
       shieldTimeout = setTimeout(() => {
         enemies.forEach(e => e.shielded = false);
         shieldTimeout = null;
       }, 3000);
-
       wave++;
       spawning = false;
       spawnTimeout = null;
@@ -171,28 +212,24 @@ function spawnEnemies() {
   }
 }
 
-// --- Main loop ---
 function gameLoop() {
   if (gameOver) {
     ctx.fillStyle = "rgba(0,0,0,0.6)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-
     ctx.fillStyle = "red";
     ctx.font = "50px Arial";
     ctx.textAlign = "center";
     ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2 - 10);
-
     ctx.fillStyle = "white";
     ctx.font = "28px Arial";
     ctx.fillText("Score: " + score, canvas.width / 2, canvas.height / 2 + 40);
-
     showRestartButton();
+    showMenuButton();
     isRunning = false;
     return;
   }
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-
   movePlayer();
   drawPlayer();
   updateBullets();
@@ -202,7 +239,7 @@ function gameLoop() {
   spawnEnemies();
   drawScore();
   updateHealthPickups();
-  drawHealth();
+  drawHealthBar();
 
   if (bombEffect) {
     ctx.beginPath();
@@ -212,21 +249,23 @@ function gameLoop() {
     bombEffect.duration--;
     if (bombEffect.duration <= 0) bombEffect = null;
   }
+  const now = performance.now();
+  const deltaTime = now - lastFrameTime;
+  lastFrameTime = now;
+
+  drawExplosions(deltaTime);
 
   isRunning = true;
   requestAnimationFrame(gameLoop);
 }
 
-// --- Helpers ---
 function movePlayer() {
   if (keys["w"]) player.y -= player.speed;
   if (keys["s"]) player.y += player.speed;
   if (keys["a"]) player.x -= player.speed;
   if (keys["d"]) player.x += player.speed;
-
   player.x = Math.max(player.size, Math.min(canvas.width - player.size, player.x));
   player.y = Math.max(player.size, Math.min(canvas.height - player.size, player.y));
-
   if (playerFlash > 0) playerFlash--;
 }
 
@@ -234,46 +273,14 @@ function drawPlayer() {
   const angle = Math.atan2(mouseY - player.y, mouseX - player.x) + Math.PI / 2;
   const playerSize = player.size * 6;
   const bodyCenterOffsetY = 20;
-
   ctx.save();
   ctx.translate(player.x, player.y);
   ctx.rotate(angle);
-  if (playerFlash > 0) ctx.globalAlpha = 0.5; // flash
-  ctx.drawImage(
-    playerImg,
-    -playerSize / 2,
-    -playerSize / 2 - bodyCenterOffsetY,
-    playerSize,
-    playerSize
-  );
+  if (playerFlash > 0) ctx.globalAlpha = 0.5;
+  ctx.drawImage(playerImg, -playerSize / 2, -playerSize / 2 - bodyCenterOffsetY, playerSize, playerSize);
   ctx.globalAlpha = 1;
   ctx.restore();
 }
-
-
-function drawPlayer() {
-  const angle = Math.atan2(mouseY - player.y, mouseX - player.x) + Math.PI / 2;
-
-  const playerSize = player.size * 6;
-
-
-  const bodyCenterOffsetY = 20;
-
-  ctx.save();
-  ctx.translate(player.x, player.y);
-  ctx.rotate(angle);
-  ctx.drawImage(
-    playerImg,
-    -playerSize / 2,
-    -playerSize / 2 - bodyCenterOffsetY,
-    playerSize,
-    playerSize
-  );
-  ctx.restore();
-}
-
-
-
 
 function updateBullets() {
   const bulletSize = 15;
@@ -281,14 +288,11 @@ function updateBullets() {
     const b = bullets[i];
     b.x += b.dx * b.speed;
     b.y += b.dy * b.speed;
-
     if (b.x < 0 || b.y < 0 || b.x > canvas.width || b.y > canvas.height) {
       bullets.splice(i, 1);
       continue;
     }
-
     const angle = Math.atan2(b.dy, b.dx);
-
     ctx.save();
     ctx.translate(b.x, b.y);
     ctx.rotate(angle);
@@ -299,31 +303,23 @@ function updateBullets() {
 
 function updateEnemies() {
   const now = Date.now();
-
   for (let ei = enemies.length - 1; ei >= 0; ei--) {
     const e = enemies[ei];
-
-    // Move enemy if not shielded
     if (!e.shielded) {
       const angle = Math.atan2(player.y - e.y, player.x - e.x);
       e.x += Math.cos(angle) * e.speed;
       e.y += Math.sin(angle) * e.speed;
     }
-
     const distToPlayer = Math.hypot(player.x - e.x, player.y - e.y);
     if (distToPlayer < player.size + e.size && !e.shielded) {
       playerHealth -= 1;
       playerFlash = 10;
-
       const bounceAngle = Math.atan2(e.y - player.y, e.x - player.x);
-      e.vx = Math.cos(bounceAngle) * 12.5; // horizontal velocity
-      e.vy = Math.sin(bounceAngle) * 12.5; // vertical velocity
-      e.bounceFrames = 8; // lasts 5 frames
-
+      e.vx = Math.cos(bounceAngle) * 12.5;
+      e.vy = Math.sin(bounceAngle) * 12.5;
+      e.bounceFrames = 8;
       if (playerHealth <= 0) gameOver = true;
     }
-
-    // Apply bounce movement
     if (e.bounceFrames && e.bounceFrames > 0) {
       e.x += e.vx;
       e.y += e.vy;
@@ -332,8 +328,6 @@ function updateEnemies() {
       e.vx = 0;
       e.vy = 0;
     }
-
-    // Enemy shooting
     if (e.canShoot && now - e.lastShot >= e.shootCooldown && !e.shielded) {
       const angleToPlayer = Math.atan2(player.y - e.y, player.x - e.x);
       enemyBullets.push({
@@ -347,20 +341,17 @@ function updateEnemies() {
       });
       e.lastShot = now;
     }
-
-    // Enemy hit by player bullets (needs 2 hits)
     for (let bi = bullets.length - 1; bi >= 0; bi--) {
       const b = bullets[bi];
       const dist = Math.hypot(e.x - b.x, e.y - b.y);
       if (dist < e.size + b.size && !e.shielded) {
-        e.hits = (e.hits || 0) + 1;
+        e.hp -= 1;
         bullets.splice(bi, 1);
-        if (e.hits >= 2) {
-          // drop health
+        if (e.hp <= 0) {
           const dropChance = Math.random();
           if (dropChance < 0.07) {
             healthPickups.push({ x: e.x, y: e.y, type: "big" });
-          } else if (dropChance < 0.19) { 
+          } else if (dropChance < 0.19) {
             healthPickups.push({ x: e.x, y: e.y, type: "mini" });
           }
           enemies.splice(ei, 1);
@@ -369,8 +360,6 @@ function updateEnemies() {
         break;
       }
     }
-
-    // Draw enemy
     ctx.beginPath();
     ctx.arc(e.x, e.y, e.size, 0, Math.PI * 2);
     ctx.fillStyle = e.color;
@@ -387,8 +376,6 @@ function updateHealthPickups() {
     const img = h.type === "big" ? bigHealthImg : miniHealthImg;
     const size = h.type === "big" ? 30 : 15;
     ctx.drawImage(img, h.x - size / 2, h.y - size / 2, size, size);
-
-    // Collision with player
     if (Math.hypot(player.x - h.x, player.y - h.y) < player.size + size / 2) {
       playerHealth = Math.min(maxHealth, playerHealth + (h.type === "big" ? maxHealth : 1));
       healthPickups.splice(i, 1);
@@ -396,13 +383,23 @@ function updateHealthPickups() {
   }
 }
 
-function drawHealth() {
-  ctx.fillStyle = "red";
-  for (let i = 0; i < maxHealth; i++) {
-    ctx.globalAlpha = i < playerHealth ? 1 : 0.3;
-    ctx.fillRect(20 + i * 35, 80, 30, 30);
-  }
-  ctx.globalAlpha = 1;
+function drawHealthBar() {
+  const barWidth = 200;
+  const barHeight = 20;
+  const x = 20;
+  const y = 75;
+  const healthRatio = Math.max(0, playerHealth / maxHealth);
+  const currentWidth = barWidth * healthRatio;
+  ctx.fillStyle = "#333";
+  ctx.fillRect(x, y, barWidth, barHeight);
+  ctx.fillStyle = healthRatio > 0.5 ? "#4caf50" : healthRatio > 0.25 ? "#ff9800" : "#f44336";
+  ctx.fillRect(x, y, currentWidth, barHeight);
+  ctx.strokeStyle = "#000";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(x, y, barWidth, barHeight);
+  ctx.fillStyle = "#fff";
+  ctx.font = "16px Arial";
+  ctx.fillText(`${playerHealth.toFixed(1)} / ${maxHealth}`, x + 50, y + 15);
 }
 
 function updateEnemyBullets() {
@@ -411,23 +408,19 @@ function updateEnemyBullets() {
     const b = enemyBullets[i];
     b.x += b.dx * b.speed;
     b.y += b.dy * b.speed;
-
     const angle = Math.atan2(b.dy, b.dx);
-
     ctx.save();
     ctx.translate(b.x, b.y);
     ctx.rotate(angle);
     ctx.drawImage(bulletImg, -enemyBulletSize / 2, -enemyBulletSize / 2, enemyBulletSize, enemyBulletSize);
     ctx.restore();
-
     const dist = Math.hypot(player.x - b.x, player.y - b.y);
     if (dist < player.size + b.size) {
-      playerHealth -= 0.5; // bullets require 2 hits
+      playerHealth -= 0.5;
       enemyBullets.splice(i, 1);
       if (playerHealth <= 0) gameOver = true;
       continue;
     }
-
     if (b.x < 0 || b.x > canvas.width || b.y < 0 || b.y > canvas.height)
       enemyBullets.splice(i, 1);
   }
@@ -455,15 +448,54 @@ function updateBombProjectiles() {
   }
 }
 
+function drawExplosions(deltaTime) {
+  for (let i = explosions.length - 1; i >= 0; i--) {
+    const exp = explosions[i];
+    const img = explosionFrames[Math.floor(exp.frame)];
+
+    const growth = 1 + exp.frame * 0.35;
+    const radius = exp.radius * growth;
+
+    ctx.save();
+    ctx.globalAlpha = 1 - exp.frame / explosionFrames.length;
+    ctx.drawImage(img, exp.x - radius, exp.y - radius, radius * 2, radius * 2);
+    ctx.restore();
+
+    exp.frameTime += deltaTime;
+    if (exp.frameTime > 200) {
+      exp.frame++;
+      exp.frameTime = 0;
+    }
+
+    if (exp.frame >= explosionFrames.length) {
+      explosions.splice(i, 1);
+    }
+  }
+}
+
 function triggerBombExplosion(x, y) {
-  const radius = 300;
-  bombEffect = { x, y, radius, duration: 30 };
+  const radius = 115;
+  explosions.push({
+    x,
+    y,
+    radius,
+    frame: 0,
+    frameTime: 0
+  });
+
   for (let i = enemies.length - 1; i >= 0; i--) {
     const e = enemies[i];
     const dist = Math.hypot(x - e.x, y - e.y);
-    if (dist < radius + e.size && !e.shielded) {
+    if (dist < radius + e.size && !e.shielded && !e.isTank) {
       enemies.splice(i, 1);
       score += 20;
+    }
+    if(dist < radius + e.size && !e.shielded && e.isTank) {
+      e.hp -= 3;
+      if (e.hp <= 0) {
+        enemies.splice(i, 1);
+        score += 20;
+      }
     }
   }
 }
@@ -481,7 +513,6 @@ function drawScore() {
   }
 }
 
-// --- Skills ---
 function useBurstShot() {
   if (!burstReady) return;
   burstReady = false;
@@ -517,7 +548,6 @@ function useUltimateBomb() {
   setTimeout(() => bombReady = true, 10000);
 }
 
-// --- Input ---
 document.addEventListener('keydown', e => {
   keys[e.key] = true;
   if (e.key.toLowerCase() === "q" && !gameOver) useBurstShot();
@@ -534,9 +564,9 @@ document.addEventListener('keydown', e => {
     });
   }
 });
+
 document.addEventListener('keyup', e => { keys[e.key] = false; });
 
-// --- Start button ---
 document.getElementById('startBtn').onclick = function () {
   document.querySelector('.placeholder-img').style.display = 'none';
   document.getElementById('canvas').style.display = 'block';
