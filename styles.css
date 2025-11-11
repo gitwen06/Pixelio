@@ -39,7 +39,7 @@ body {
 #canvas {
   display: none;
   position: relative;
-  z-index: 2;
+  z-index: 1;
 }
 
 .hud {
@@ -91,6 +91,7 @@ body {
   background: rgba(0, 0, 0, 0.6);
   text-align: center;
   z-index: 1;
+  transform: translateY(145px);
 }
 
 .game-title {
@@ -104,7 +105,21 @@ body {
 
 .start-btn {
   font-family: 'ByteBounce', monospace;
-  font-size: 28px;
+  font-size: 40px;
+  padding: 16px 50px;
+  border: none;
+  border-radius: 8px;
+  background: cyan;
+  color: black;
+  cursor: pointer;
+  transition: 0.2s;
+  margin-top: 20px;
+  z-index: 2;
+}
+
+#settingsBtn {
+  font-family: 'ByteBounce', monospace;
+  font-size: 25px;
   padding: 12px 40px;
   border: none;
   border-radius: 8px;
@@ -112,13 +127,20 @@ body {
   color: black;
   cursor: pointer;
   transition: 0.2s;
-  margin-top: 200px;
+  margin-top: 20px;
   z-index: 2;
 }
 
 .start-btn:hover {
   background: white;
   transform: scale(1.05);
+}
+.start-btn, #restartBtn, #menuBtn {
+  z-index: 10;
+  pointer-events: auto;
+}
+.game-container::before {
+  pointer-events: none;
 }
 
 .skills {
@@ -142,8 +164,8 @@ body {
 }
 
 .skill-btn {
-  width: 85px;
-  height: 85px;
+  width: 70px;
+  height: 70px;
   font-size: 37px;
   font-weight: bold;
   color: black;
@@ -178,4 +200,167 @@ canvas {
   display: block;
   margin-top: 10px;
   font-size: 18px;
+}
+
+.settings-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: #444;
+  color: white;
+  border: none;
+  font-size: 24px;
+  width: 50px;
+  height: 50px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.settings-btn:hover {
+  background: #666;
+}
+
+.settings-menu {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 300px;
+  padding: 40px;
+  background: rgba(20, 20, 20, 0.95);
+  border: 2px solid #888;
+  border-radius: 12px;
+  color: white;
+  text-align: center;
+  z-index: 20;
+  box-shadow: 0 0 15px #000;
+}
+
+.settings-menu h2 {
+  margin-top: 0;
+}
+
+.settings-menu label {
+  display: block;
+  margin: 10px 0;
+}
+.close-settings {
+  margin-top: 50px;
+  margin-bottom:-50px;
+  font-family: 'ByteBounce', monospace;
+  font-size: 25px;
+  background-color: #666;
+}
+
+
+.settings-menu button {
+  background: #70b655;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.settings-menu button:hover {
+  background: #777;
+}
+
+.hidden {
+  display: none;
+}
+
+.setting-btn {
+  background: #555;
+  color: white;
+  border: 1px solid #aaa;
+  padding: 5px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: "ByteBounce", monospace;
+  font-size: 20px;
+  transition: background 0.2s;
+}
+
+.setting-btn.waiting {
+  background: rgb(143, 52, 52);
+  color: yellow;
+}
+
+.keybind-btn:hover {
+  background: #666;
+}
+
+.upgrades-menu {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.8);
+  text-align: center;
+  z-index: 10;
+  padding: 20px;
+  border-radius: 10px;
+}
+
+.upgrades-menu.hidden {
+  display: none;
+}
+
+.upgrades-menu h2 {
+  font-size: 36px;
+  margin-bottom: 20px;
+  color: #fff;
+}
+
+.upgrade-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  width: 300px;
+}
+
+.upgrade-item span {
+  color: #fff;
+  font-size: 18px;
+}
+
+.upgrade-btn {
+  padding: 8px 15px;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.upgrade-btn:hover {
+  background-color: #45a049;
+}
+
+.close-upgrades {
+  margin-top: 20px;
+  padding: 10px 20px;
+  background-color: #f44336;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.close-upgrades:hover {
+  background-color: #d32f2f;
+}
+
+#lilSetting {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 70px;
+  height: 70px;
+  cursor: pointer;
+  z-index: 10;
 }

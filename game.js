@@ -5,6 +5,7 @@ let enemies = [];
 let enemyBullets = [];
 let playerHealth = 3;
 const maxHealth = 3;
+let isPaused = false;
 let healthPickups = [];
 let wave = 1;
 let score = 0;
@@ -20,7 +21,14 @@ let bombReady = true;
 let bombEffect = null;
 let playerFlash = 0;
 let lastFrameTime = performance.now();
-
+let shootKey = localStorage.getItem("shootKey") || "Space";
+let upgradePoints = Number(localStorage.getItem("upgradePoints")) || 0;
+let upgrades = {
+  damage: Number(localStorage.getItem("upgradeDamage")) || 1,
+  fireRate: Number(localStorage.getItem("upgradeFireRate")) || 1,
+  health: Number(localStorage.getItem("upgradeHealth")) || 3 
+};
+let lastShotTime = 0;
 
 const explosionFrames = [
   new Image(),
@@ -31,10 +39,7 @@ explosionFrames[0].src = "images/Explosion_frame_1.png";
 explosionFrames[1].src = "images/Explosion_frame_2.png";
 explosionFrames[2].src = "images/Explosion_frame_3.png";
 
-
-
 let explosions = [];
-
 
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
@@ -55,6 +60,28 @@ const skillButtonE = document.getElementById('skillE');
 skillButtonE.style.display = "none";
 skillButtonQ.style.display = "none";
 
+window.addEventListener('DOMContentLoaded', () => {
+  settings();
+
+  // Pause menu logic
+  const lilSettingImg = document.getElementById('lilSetting');
+  const pauseMenu = document.getElementById('pauseMenu');
+  const resumeGameBtn = document.getElementById('resumeGameBtn');
+
+  if (lilSettingImg) {
+    lilSettingImg.onclick = () => {
+      pauseGame();
+      pauseMenu.classList.remove('hidden');
+    };
+  }
+
+  if (resumeGameBtn) {
+    resumeGameBtn.onclick = () => {
+      pauseMenu.classList.add('hidden');
+      resumeGame();
+    };
+  }
+});
 
 const player = {
   x: canvas.width / 2,
@@ -73,7 +100,94 @@ canvas.addEventListener("mousemove", e => {
   mouseY = e.clientY - rect.top;
 });
 
+function settings() {
+  const settingsBtn = document.getElementById("settingsBtn");
+  const settingsMenu = document.getElementById("settingsMenu");
+  const closeSettings = document.getElementById("closeSettings");
+  const shootKeyBtn = document.getElementById("shootKeyBind");
+
+  shootKeyBtn.textContent = `[${shootKey}]`;
+
+  settingsBtn.onclick = () => settingsMenu.classList.remove("hidden");
+  closeSettings.onclick = () => settingsMenu.classList.add("hidden");
+
+  shootKeyBtn.onclick = () => {
+    shootKeyBtn.textContent = "[Press any key]";
+    shootKeyBtn.classList.add("waiting");
+
+    function onKeyPress(e) {
+      e.preventDefault();
+      shootKey = e.code;
+      localStorage.setItem("shootKey", shootKey);
+      shootKeyBtn.textContent = `[${shootKey}]`;
+      shootKeyBtn.classList.remove("waiting");
+      document.removeEventListener("keydown", onKeyPress);
+      document.removeEventListener("mousedown", onMousePress);
+    }
+
+    function onMousePress(e) {
+      e.preventDefault();
+      if (e.button === 0) shootKey = "MouseLeft";
+      else if (e.button === 1) shootKey = "MouseMiddle";
+      else if (e.button === 2) shootKey = "MouseRight";
+      localStorage.setItem("shootKey", shootKey);
+      shootKeyBtn.textContent = `[${shootKey}]`;
+      shootKeyBtn.classList.remove("waiting");
+      document.removeEventListener("keydown", onKeyPress);
+      document.removeEventListener("mousedown", onMousePress);
+    }
+
+    document.addEventListener("keydown", onKeyPress);
+    document.addEventListener("mousedown", onMousePress, { once: true });
+  };
+}
+
+document.getElementById('upgradesBtn').onclick = function () {
+  document.getElementById('upgradesMenu').classList.remove('hidden');
+  updateUpgradeMenu();
+};
+
+document.getElementById('closeUpgrades').onclick = function () {
+  document.getElementById('upgradesMenu').classList.add('hidden');
+};
+
+document.getElementById('damageAmount').textContent = upgrades.damage.toFixed(1);
+document.getElementById('fireRateAmount').textContent = upgrades.fireRate.toFixed(1);
+document.getElementById('healthAmount').textContent = upgrades.health.toFixed(1);
+
+document.querySelectorAll('.upgrade-btn').forEach(btn => {
+  btn.onclick = function () {
+    const type = btn.getAttribute('data-upgrade');
+    let cost = type === "damage" ? 100 : type === "fireRate" ? 150 : 200;
+    if (upgradePoints >= cost) {
+      upgradePoints -= cost;
+      upgrades[type] += 0.2;
+      localStorage.setItem("upgradePoints", upgradePoints);
+      localStorage.setItem("upgradeDamage", upgrades.damage);
+      localStorage.setItem("upgradeFireRate", upgrades.fireRate);
+      localStorage.setItem("upgradeHealth", upgrades.health);
+      updateUpgradeMenu();
+    }
+    updateUpgradeMenu();
+  };
+});
+
+function updateUpgradeMenu() {
+  document.getElementById('upgradesMenu').querySelector('h2').textContent =
+    `Upgrades (Points: ${upgradePoints})`;
+
+  
+  document.getElementById('damageAmount').textContent = upgrades.damage.toFixed(1);
+  document.getElementById('fireRateAmount').textContent = upgrades.fireRate.toFixed(1);
+  document.getElementById('healthAmount').textContent = getMaxHealth().toFixed(1);
+
+
+}
+
 function startGame() {
+  if (!isRunning && gameOver) {
+    canvas.style.pointerEvents = "none";
+  }
   if (spawnTimeout) { clearTimeout(spawnTimeout); spawnTimeout = null; }
   if (shieldTimeout) { clearTimeout(shieldTimeout); shieldTimeout = null; }
   bullets = [];
@@ -88,18 +202,18 @@ function startGame() {
   keys = {};
   player.x = canvas.width / 2;
   player.y = canvas.height / 2;
-  playerHealth = maxHealth;
+  playerHealth = getMaxHealth();
   burstReady = true;
   bombReady = true;
   bombEffect = null;
   playerFlash = 0;
-  skillButtonE.style.display="flex";
-  skillButtonQ.style.display="flex";
+  skillButtonE.style.display = "flex";
+  skillButtonQ.style.display = "flex";
   if (restartBtn) {
     restartBtn.remove();
     restartBtn = null;
   }
-  if(menuBtn) {
+  if (menuBtn) {
     menuBtn.remove();
     menuBtn = null;
   }
@@ -110,16 +224,20 @@ function startGame() {
 
 function showRestartButton() {
   if (restartBtn) return;
+
   const container = document.querySelector('.game-container');
   restartBtn = document.createElement('button');
   restartBtn.id = 'restartBtn';
   restartBtn.textContent = 'Restart';
   restartBtn.className = 'start-btn restart-btn';
+
   restartBtn.style.position = 'absolute';
-  restartBtn.style.top = '50%';
-  restartBtn.style.left = '50%';
-  restartBtn.style.transform = 'translate(-50%, -50%)';
-  restartBtn.style.zIndex = 5; 
+  restartBtn.style.bottom = '30px';
+  restartBtn.style.right = '37%';
+  restartBtn.style.transform = 'translateY(-50%)';
+  restartBtn.style.zIndex = 10;
+  restartBtn.style.margin = '20px';
+
   container.appendChild(restartBtn);
 
   restartBtn.onclick = () => {
@@ -131,22 +249,30 @@ function showRestartButton() {
 
 function showMenuButton() {
   if (menuBtn) return;
+
   const container = document.querySelector('.game-container');
   menuBtn = document.createElement('button');
   menuBtn.id = 'menuBtn';
   menuBtn.textContent = 'Main Menu';
   menuBtn.className = 'start-btn menu-btn';
+
   menuBtn.style.position = 'absolute';
-  menuBtn.style.top = '60%';
-  menuBtn.style.left = '50%';
-  menuBtn.style.transform = 'translate(-50%, -50%)';
-  menuBtn.style.zIndex = 5;
+  menuBtn.style.bottom = '10px';
+  menuBtn.style.left = '50.5%';
+  menuBtn.style.transform = 'translateX(-50%)';
+  menuBtn.style.zIndex = 10;
+
   container.appendChild(menuBtn);
 
   menuBtn.onclick = () => {
     menuBtn.remove();
     menuBtn = null;
-    if (restartBtn) { restartBtn.remove(); restartBtn = null; }
+
+    if (restartBtn) {
+      restartBtn.remove();
+      restartBtn = null;
+    }
+
     startScreen.style.display = 'flex';
     canvas.style.display = 'none';
     hud.style.display = 'none';
@@ -221,6 +347,8 @@ function spawnEnemies() {
 }
 
 function gameLoop() {
+  if (isPaused) return;
+
   if (gameOver) {
     ctx.fillStyle = "rgba(0,0,0,0.6)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -293,6 +421,9 @@ function drawPlayer() {
 
 function updateBullets() {
   const bulletSize = 15;
+  if (isRunning) {
+    canvas.style.pointerEvents = "auto";
+  }
   for (let i = bullets.length - 1; i >= 0; i--) {
     const b = bullets[i];
     b.x += b.dx * b.speed;
@@ -354,7 +485,7 @@ function updateEnemies() {
       const b = bullets[bi];
       const dist = Math.hypot(e.x - b.x, e.y - b.y);
       if (dist < e.size + b.size && !e.shielded) {
-        e.hp -= 1;
+        e.hp -= upgrades.damage;
         bullets.splice(bi, 1);
         if (e.hp <= 0) {
           const dropChance = Math.random();
@@ -363,8 +494,11 @@ function updateEnemies() {
           } else if (dropChance < 0.19) {
             healthPickups.push({ x: e.x, y: e.y, type: "mini" });
           }
+          let type = "red";
+          if (e.color === "orange") type = "orange";
+          if (e.isTank) type = "tank";
           enemies.splice(ei, 1);
-          score += 10;
+          addScore(type);
         }
         break;
       }
@@ -386,7 +520,7 @@ function updateHealthPickups() {
     const size = h.type === "big" ? 30 : 15;
     ctx.drawImage(img, h.x - size / 2, h.y - size / 2, size, size);
     if (Math.hypot(player.x - h.x, player.y - h.y) < player.size + size / 2) {
-      playerHealth = Math.min(maxHealth, playerHealth + (h.type === "big" ? maxHealth : 1));
+      playerHealth = Math.min(getMaxHealth(), playerHealth + (h.type === "big" ? getMaxHealth() : 1));
       healthPickups.splice(i, 1);
     }
   }
@@ -397,7 +531,7 @@ function drawHealthBar() {
   const barHeight = 20;
   const x = 20;
   const y = 75;
-  const healthRatio = Math.max(0, playerHealth / maxHealth);
+  const healthRatio = Math.max(0, playerHealth / getMaxHealth());
   const currentWidth = barWidth * healthRatio;
   ctx.fillStyle = "#333";
   ctx.fillRect(x, y, barWidth, barHeight);
@@ -408,7 +542,7 @@ function drawHealthBar() {
   ctx.strokeRect(x, y, barWidth, barHeight);
   ctx.fillStyle = "#fff";
   ctx.font = "16px Arial";
-  ctx.fillText(`${playerHealth.toFixed(1)} / ${maxHealth}`, x + 50, y + 15);
+  ctx.fillText(`${playerHealth.toFixed(1)} / ${getMaxHealth()}`, x + 50, y + 15);
 }
 
 function updateEnemyBullets() {
@@ -439,14 +573,15 @@ function updateBombProjectiles() {
   for (let i = bombProjectiles.length - 1; i >= 0; i--) {
     const b = bombProjectiles[i];
     b.x += b.dx * b.speed;
+
     b.y += b.dy * b.speed;
 
     if (b.rotation === undefined) b.rotation = 0;
-    b.rotation += 0.2; 
+    b.rotation += 0.2;
     const bombSize = 30;
     ctx.save();
-    ctx.translate(b.x, b.y); 
-    ctx.rotate(b.rotation);  
+    ctx.translate(b.x, b.y);
+    ctx.rotate(b.rotation);
     ctx.drawImage(bombBullet, -bombSize / 2, -bombSize / 2, bombSize, bombSize);
     ctx.restore();
 
@@ -493,11 +628,13 @@ function drawExplosions(deltaTime) {
 }
 
 function triggerBombExplosion(x, y) {
-  const radius = 125;
+  const imageRadius = 125;    
+  const damageRadius = 200;     
+
   explosions.push({
     x,
     y,
-    radius,
+    radius: imageRadius,
     frame: 0,
     frameTime: 0
   });
@@ -505,11 +642,11 @@ function triggerBombExplosion(x, y) {
   for (let i = enemies.length - 1; i >= 0; i--) {
     const e = enemies[i];
     const dist = Math.hypot(x - e.x, y - e.y);
-    if (dist < radius + e.size && !e.shielded && !e.isTank) {
+    if (dist < damageRadius + e.size && !e.shielded && !e.isTank) {
       enemies.splice(i, 1);
       score += 20;
     }
-    if(dist < radius  + e.size && !e.shielded && e.isTank) {
+    if (dist < damageRadius + e.size && !e.shielded && e.isTank) {
       e.hp -= 3;
       if (e.hp <= 0) {
         enemies.splice(i, 1);
@@ -518,6 +655,7 @@ function triggerBombExplosion(x, y) {
     }
   }
 }
+
 function drawScore() {
   ctx.fillStyle = "white";
   ctx.font = "40px ByteBounce";
@@ -565,7 +703,7 @@ function useUltimateBomb() {
     rotation: 0,
     active: true
   });
-  
+
   setTimeout(() => bombReady = true, 10000);
 }
 
@@ -573,16 +711,20 @@ document.addEventListener('keydown', e => {
   keys[e.key] = true;
   if (e.key.toLowerCase() === "q" && !gameOver) useBurstShot();
   if (e.key.toLowerCase() === "e" && !gameOver) useUltimateBomb();
-  if (e.code === "Space" && !gameOver) {
-    const angle = Math.atan2(mouseY - player.y, mouseX - player.x);
-    bullets.push({
-      x: player.x,
-      y: player.y,
-      size: 5,
-      speed: 6,
-      dx: Math.cos(angle),
-      dy: Math.sin(angle)
-    });
+  if (e.code === shootKey && !gameOver) {
+    const now = Date.now();
+    if (now - lastShotTime > 300 / upgrades.fireRate) {
+      lastShotTime = now;
+      const angle = Math.atan2(mouseY - player.y, mouseX - player.x);
+      bullets.push({
+        x: player.x,
+        y: player.y,
+        size: 5,
+        speed: 6,
+        dx: Math.cos(angle),
+        dy: Math.sin(angle)
+      });
+    }
   }
 });
 
@@ -593,3 +735,57 @@ document.getElementById('startBtn').onclick = function () {
   document.getElementById('canvas').style.display = 'block';
   startGame();
 };
+
+function shootBullet() {
+  const angle = Math.atan2(mouseY - player.y, mouseX - player.x);
+  bullets.push({
+    x: player.x,
+    y: player.y,
+    size: 5,
+    speed: 6,
+    dx: Math.cos(angle),
+    dy: Math.sin(angle)
+  });
+}
+
+document.addEventListener("mousedown", e => {
+  if (gameOver) return;
+  if (
+    (shootKey === "MouseLeft" && e.button === 0) ||
+    (shootKey === "MouseMiddle" && e.button === 1) ||
+    (shootKey === "MouseRight" && e.button === 2)
+  ) {
+    shootBullet();
+  }
+});
+document.addEventListener("contextmenu", e => e.preventDefault());
+
+function addScore(enemyType) {
+  let points = 0;
+  if (enemyType === "red") points = 10;
+  else if (enemyType === "orange") points = 20;
+  else if (enemyType === "tank") points = 50;
+  score += points;
+  upgradePoints = Math.floor(score / 2);
+  localStorage.setItem("upgradePoints", upgradePoints);
+  updateUpgradeMenu();
+}
+
+const baseMaxHealth = 3;
+function getMaxHealth() {
+  return baseMaxHealth + upgrades.health;
+}
+
+function pauseGame() {
+  isPaused = true;
+  isRunning = false;
+}
+
+function resumeGame() {
+  if (!gameOver && isPaused) {
+    isPaused = false;
+    isRunning = true;
+    requestAnimationFrame(gameLoop);
+  }
+}
+
