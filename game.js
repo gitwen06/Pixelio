@@ -26,7 +26,7 @@ let upgradePoints = Number(localStorage.getItem("upgradePoints")) || 0;
 let upgrades = {
   damage: Number(localStorage.getItem("upgradeDamage")) || 1,
   fireRate: Number(localStorage.getItem("upgradeFireRate")) || 1,
-  health: Number(localStorage.getItem("upgradeHealth")) || 3 
+  health: Number(localStorage.getItem("upgradeHealth")) || 3
 };
 let lastShotTime = 0;
 
@@ -63,10 +63,10 @@ skillButtonQ.style.display = "none";
 window.addEventListener('DOMContentLoaded', () => {
   settings();
 
-  // Pause menu logic
   const lilSettingImg = document.getElementById('lilSetting');
   const pauseMenu = document.getElementById('pauseMenu');
   const resumeGameBtn = document.getElementById('resumeGameBtn');
+  const shootKeyBtnPause = document.getElementById('shootKeyBindPause');
 
   if (lilSettingImg) {
     lilSettingImg.onclick = () => {
@@ -79,6 +79,41 @@ window.addEventListener('DOMContentLoaded', () => {
     resumeGameBtn.onclick = () => {
       pauseMenu.classList.add('hidden');
       resumeGame();
+    };
+  }
+
+  // --- Change key feature for pause menu ---
+  if (shootKeyBtnPause) {
+    shootKeyBtnPause.textContent = `[${shootKey}]`;
+
+    shootKeyBtnPause.onclick = () => {
+      shootKeyBtnPause.textContent = "[Press any key]";
+      shootKeyBtnPause.classList.add("waiting");
+
+      function onKeyPress(e) {
+        e.preventDefault();
+        shootKey = e.code;
+        localStorage.setItem("shootKey", shootKey);
+        shootKeyBtnPause.textContent = `[${shootKey}]`;
+        shootKeyBtnPause.classList.remove("waiting");
+        document.removeEventListener("keydown", onKeyPress);
+        document.removeEventListener("mousedown", onMousePress);
+      }
+
+      function onMousePress(e) {
+        e.preventDefault();
+        if (e.button === 0) shootKey = "MouseLeft";
+        else if (e.button === 1) shootKey = "MouseMiddle";
+        else if (e.button === 2) shootKey = "MouseRight";
+        localStorage.setItem("shootKey", shootKey);
+        shootKeyBtnPause.textContent = `[${shootKey}]`;
+        shootKeyBtnPause.classList.remove("waiting");
+        document.removeEventListener("keydown", onKeyPress);
+        document.removeEventListener("mousedown", onMousePress);
+      }
+
+      document.addEventListener("keydown", onKeyPress);
+      document.addEventListener("mousedown", onMousePress, { once: true });
     };
   }
 });
@@ -176,7 +211,7 @@ function updateUpgradeMenu() {
   document.getElementById('upgradesMenu').querySelector('h2').textContent =
     `Upgrades (Points: ${upgradePoints})`;
 
-  
+
   document.getElementById('damageAmount').textContent = upgrades.damage.toFixed(1);
   document.getElementById('fireRateAmount').textContent = upgrades.fireRate.toFixed(1);
   document.getElementById('healthAmount').textContent = getMaxHealth().toFixed(1);
@@ -187,9 +222,12 @@ function updateUpgradeMenu() {
 function startGame() {
   if (!isRunning && gameOver) {
     canvas.style.pointerEvents = "none";
+    
   }
   if (spawnTimeout) { clearTimeout(spawnTimeout); spawnTimeout = null; }
   if (shieldTimeout) { clearTimeout(shieldTimeout); shieldTimeout = null; }
+  const lilSettingImg = document.getElementById('lilSetting');
+  if (lilSettingImg) lilSettingImg.style.display = 'block';
   bullets = [];
   bombProjectiles = [];
   enemies = [];
@@ -247,6 +285,7 @@ function showRestartButton() {
   };
 }
 
+const lilSettingImg = document.getElementById('lilSetting');
 function showMenuButton() {
   if (menuBtn) return;
 
@@ -267,10 +306,17 @@ function showMenuButton() {
   menuBtn.onclick = () => {
     menuBtn.remove();
     menuBtn = null;
+    skillButtonE.style.display = "none";
+    skillButtonQ.style.display = "none";
+    if (lilSettingImg) lilSettingImg.style.display = "none";
+    const startScreen = document.getElementById('startScreen');
+    const hud = document.getElementById('hud');
+    const bgGif = document.getElementById('bgGif');
 
     if (restartBtn) {
       restartBtn.remove();
       restartBtn = null;
+
     }
 
     startScreen.style.display = 'flex';
@@ -628,8 +674,8 @@ function drawExplosions(deltaTime) {
 }
 
 function triggerBombExplosion(x, y) {
-  const imageRadius = 125;    
-  const damageRadius = 200;     
+  const imageRadius = 125;
+  const damageRadius = 200;
 
   explosions.push({
     x,

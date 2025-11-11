@@ -364,3 +364,25 @@ canvas {
   cursor: pointer;
   z-index: 10;
 }
+button:focus,
+button:active,
+.setting-btn:focus,
+.setting-btn:active,
+.upgrade-btn:focus,
+.upgrade-btn:active,
+.close-upgrades:focus,
+.close-upgrades:active,
+.close-settings:focus,
+.close-settings:active,
+.skill-btn:focus,
+.skill-btn:active,
+#lilSetting:focus,
+#lilSetting:active {
+  outline: none;
+  box-shadow: none;
+}
+button, .setting-btn, .upgrade-btn, .close-upgrades, .close-settings, .skill-btn, #lilSetting {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
